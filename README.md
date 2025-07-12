@@ -21,4 +21,7 @@ Install with pip:
 pip install xyz_canvas
 ```
 
+## Demo Screenshot
+The file demo.py currently allows you to add lines to the canvas by clicking end points sequentially. The callback function then has access to the lines collection. At the moment, no markers precede line generation but that's my next step, as well as adding delete, move, attach, snap to grid, snap to object methods.
+
 ![Capture](https://github.com/user-attachments/assets/80abeb00-da7e-44d8-9379-c7abef099912)
