@@ -15,4 +15,10 @@ xyz_canvas.transforms
 xyz_canvas.utils
  ....
 
+## Installation
+Install with pip:
+```
+pip install xyz_canvas
+```
+
 ![Capture](https://github.com/user-attachments/assets/80abeb00-da7e-44d8-9379-c7abef099912)
