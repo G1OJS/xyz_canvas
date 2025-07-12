@@ -1,19 +1,19 @@
 
 import matplotlib.pyplot as plt
-from xyz_canvas.xyz_canvas import xyz_mouse, xyz_lines
+from xyz_canvas.gui import xyz_mouse, xyz_lines
 
 global n_lines
 
 def mouse_clicked(xyz):
     global n_lines
     #print(xyz)
-    lines.add(xyz)
-    n_lines_in_list =len(lines.line_list) 
-    if (n_lines_in_list > n_lines):
-        print(f"\n{n_lines_in_list} lines in list:")
-        for l in lines.line_list:
+    lines.add_line_end(xyz)
+    n_lines_in_collection =len(lines.lines_collection) 
+    if (n_lines_in_collection > n_lines):
+        print(f"\n{n_lines_in_collection} lines in list:")
+        for l in lines.lines_collection:
             print(l)
-    n_lines = n_lines_in_list
+    n_lines = n_lines_in_collection
 
 def mouse_movedto(xyz):
    # print(mouse.movedto_xyz)

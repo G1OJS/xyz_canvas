@@ -66,13 +66,13 @@ class xyz_lines:
         self.ax = ax
         self.current_line_ends = [None, None]
         self.current_line_start = None
-        self.line_list = []
+        self.lines_collection = []
 
-    def add(self, xyz):
+    def add_line_end(self, xyz):
         if (self.current_line_start):
             line = [self.current_line_start, xyz]
             self.ax.plot([line[0][0],line[1][0]],[line[0][1],line[1][1]],[line[0][2],line[1][2]])
-            self.line_list.append(line)
+            self.lines_collection.append(line)
             self.current_line_start = None
         else:
             self.current_line_start = xyz
