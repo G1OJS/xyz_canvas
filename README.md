@@ -1,2 +1,2 @@
-# xyz_canvas
-Clickable 3D geometry canvas using matplotlib.pyplot
+# Python_3D_GUI
+Clickable GUI class for geometry editing using matplotlib.pyplot
