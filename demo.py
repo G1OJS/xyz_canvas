@@ -54,7 +54,7 @@ buttons_to_show = [
 ]
 
 
-print("This is a demo of xyz_canvas (pre-release, V0.2.0), a Python library to add, edit, and connect 3D wire-frame objects\n"
+print("This is a demo of xyz_canvas (pre-release, V0.2.1), a Python library to add, edit, and connect 3D wire-frame objects\n"
       +"using only Matplotlib. The idea is that this will be called by code that needs the \n"
       +"user to define / edit these objects in 3D space.\n\n"
       +"Currently, only lines are supported but the plan is to include at least lines, rectangles, \n"
