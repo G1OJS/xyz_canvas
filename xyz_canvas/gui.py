@@ -36,6 +36,8 @@ class xyz_mouse:
     def on_move(self, event):
         global in_axes_range_prev
         if event.inaxes:
+            if type(getattr(self.ax, 'invM', None)) is None:
+                return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
             p = self._get_pane_coords(s)
             in_axes_range_now = self._in_axes_range(p)
