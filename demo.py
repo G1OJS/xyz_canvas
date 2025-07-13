@@ -19,11 +19,15 @@ def on_button_change(action):
     elif action == 'list':
         list_objects()
     elif action == 'line':
+        creator.set_mode('line')
         print("Line button pressed — mode switching to 'line' not yet implemented (line is default)")
         # Implement mode switch: creator.set_mode('line')
     elif action == 'rectangle':
+        creator.set_mode('rectangle')
         print("Rectangle button pressed — mode switching to 'rectangle' not yet implemented")
         # Implement mode switch: creator.set_mode('rectangle')
+    elif action == 'select':
+        creator.set_mode('select')
     elif action == 'exit_close':
         print("Exit & Close button pressed — exiting and closing window")
         plt.close()
@@ -35,6 +39,7 @@ def on_button_change(action):
 
 
 def list_objects():
+    print(objects)
     if(len(objects)==0):
         print("No objects are present, please add some")
     else:
@@ -49,6 +54,7 @@ buttons_to_show = [
     ('Line', 'line'),
     ('Rectangle', 'rectangle'),
     ('List', 'list'),
+    ('Select/Move', 'select'),
     ('Exit & Close', 'exit_close'),
     ('Exit & Keep', 'exit_keep'),
 ]
