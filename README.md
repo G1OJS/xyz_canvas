@@ -1,7 +1,7 @@
 # xyz_canvas
 Interactive canvas for editing 3D geometry, using matplotlib.pyplot
 
-This is a demo of xyz_canvas (pre-release, V0.2.0), a Python library to add, edit, and connect 3D wire-frame objects
+This is a demo of xyz_canvas (pre-release, V0.2.1), a Python library to add, edit, and connect 3D wire-frame objects
 using only Matplotlib. The idea is that this will be called by code that needs the 
 user to define / edit these objects in 3D space.
 
