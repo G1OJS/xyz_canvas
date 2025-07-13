@@ -1,6 +1,27 @@
 
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
+from matplotlib.widgets import Button
+
+class xyz_buttons:
+    def __init__(self, plt, fig, on_change_cb, buttons):
+        self.plt = plt
+        self.fig = fig
+        self.on_change_cb = on_change_cb
+        self.buttons = []
+
+        # Layout settings
+        button_height = 0.05
+        button_width = 0.12
+        spacing = 0.01
+        start_y = 0.9
+
+        for i, (label, action) in enumerate(buttons):
+            ax = fig.add_axes([0.01, start_y - i*(button_height + spacing), button_width, button_height])
+            btn = Button(ax, label)
+            btn.on_clicked(lambda event, act=action: self.on_change_cb(act))
+            self.buttons.append(btn)
+
 
 class xyz_mouse:
 
@@ -60,21 +81,4 @@ class xyz_mouse:
         return (x_in and y_in and z_in)
 
 
-class xyz_lines:
-    def __init__(self, plt, ax):
-        self.plt = plt
-        self.ax = ax
-        self.current_line_ends = [None, None]
-        self.current_line_start = None
-        self.lines_collection = []
 
-    def add_line_end(self, xyz):
-        if (self.current_line_start):
-            line = [self.current_line_start, xyz]
-            self.ax.plot([line[0][0],line[1][0]],[line[0][1],line[1][1]],[line[0][2],line[1][2]])
-            self.lines_collection.append(line)
-            self.current_line_start = None
-        else:
-            self.current_line_start = xyz
-        
-    
