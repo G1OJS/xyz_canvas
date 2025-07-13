@@ -1,19 +1,21 @@
 # xyz_canvas
 Interactive canvas for editing 3D geometry, using matplotlib.pyplot
 
-Current classes:
-In xyz_canvas.gui:
-- xyz_mouse: uses specified callbacks on mouse (left) click and on mouse move to return 3D co-ordinates
-- xyz_lines: adds lines to a collection of lines with sequentially specified end points
+This is a demo of xyz_canvas (pre-release, V0.2.0), a Python library to add, edit, and connect 3D wire-frame objects
+using only Matplotlib. The idea is that this will be called by code that needs the 
+user to define / edit these objects in 3D space.
 
-I'm thinking of adding
-xyz_canvas.transforms
-- rotatations
-- translations
-- sheers
-  etc
-xyz_canvas.utils
- ....
+Currently, only lines are supported but the plan is to include at least lines, rectangles, 
+arcs (circles) and helices. Shape types are seleced via the buttons next to the geometry display.
+The clear button is implemented, as is Exit & Close and List, but the others are placeholders.
+
+To add a line, click two points within the axis space (note that no feedback is given for the first click).
+
+The view may be rotated at any time by clicking and dragging just oustide the axis space.
+
+Currently, endpoints / vertices are pinned to the 'closest' backplane (shaded & gridded).
+Methods to move vertices into general 3D space by clicking and typing co-ordinates,
+snapping to a 3D grid / other objects,  will be added soon.
 
 ## Installation
 Install with pip:
