@@ -64,7 +64,7 @@ print("This is a demo of xyz_canvas (pre-release, V0.2.0), a Python library to a
       +"The view may be rotated at any time by clicking and dragging just oustide the axis space.\n\n"
       +"Currently, endpoints / vertices are pinned to the 'closest' backplane (shaded & gridded).\n"
       +"Methods to move vertices into general 3D space by clicking and typing co-ordinates,\n"
-      +"snapping to a 3D grid / other objects,  will be added soon.")
+      +"snapping to a 3D grid / other objects,  will be added soon.\n\n")
       
 
 fig = plt.figure()
