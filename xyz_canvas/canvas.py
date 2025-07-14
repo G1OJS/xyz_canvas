@@ -3,27 +3,93 @@ import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
 from matplotlib.widgets import Button
 
-class xyz_buttons:
-    def __init__(self, plt, fig, on_change_cb, buttons):
+def _interleave(ends):
+    a = ends[0]
+    b = ends[1]
+    return [a[0],b[0]], [a[1],b[1]], [a[2],b[2]]
+
+class make_objects:
+
+    def __init__(self, on_complete_cb):
+        self.fig = plt.figure()
+        self.ax = self.fig.add_subplot(111, projection='3d')
+        self.marker = None
+        self.lines = []
+        self.current_line = None
+        self.isSelected = False
+        self.init_canvas()
+        self.on_complete_cb = on_complete_cb
+        self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
+        plt.show()
+
+    def init_canvas(self):
+        self.objects = []
+        self.ax.set_xlim([0,1])
+        self.ax.set_ylim([0,1])
+        self.ax.set_zlim([0,1])
+        self.buttons = buttons(plt, self.fig, self.on_button_press)
+        print("Scene initialised")
+
+
+    def on_button_press(self,action):
+        if action == 'clear':
+            self.init_canvas()
+        elif action == 'save':
+            self.on_complete_cb(self.lines)
+        elif action == 'exit':
+            plt.close()
+
+    def on_pointer_move(self, xyz):
+        pass
+        
+    def on_pointer_click(self, xyz):
+        if self.current_line == None:
+            self.start_line(xyz)
+        else:
+            self.complete_line(xyz)
+
+    def start_line(self,xyz):
+        xs, ys, zs = xyz
+        self.current_line = [xs,ys,zs]
+        self.marker = self.ax.scatter([xs], [ys], [zs], color='red', marker='o', s=50)
+        self.ax.figure.canvas.draw_idle()
+
+    def complete_line(self,xyz):
+        xe, ye, ze = xyz
+        line_ends = [self.current_line,[xe,ye,ze]]
+        self.lines.append(line_ends)
+        self.current_line = None
+        self.marker.remove()
+        self.ax.figure.canvas.draw_idle()
+        self.ax.plot(*_interleave(line_ends), color='red')
+
+class buttons:
+    def __init__(self, plt, fig, buttons_cb):
         self.plt = plt
         self.fig = fig
-        self.on_change_cb = on_change_cb
+        self.buttons_cb = buttons_cb
         self.buttons = []
 
         # Layout settings
         button_height = 0.05
-        button_width = 0.12
+        button_width = 0.2
         spacing = 0.01
         start_y = 0.9
+
+        buttons = [
+            ('Clear canvas', 'clear'),
+            ('Save last obj', 'save'),
+            ('Exit', 'exit'),
+            ]
 
         for i, (label, action) in enumerate(buttons):
             ax = fig.add_axes([0.01, start_y - i*(button_height + spacing), button_width, button_height])
             btn = Button(ax, label)
-            btn.on_clicked(lambda event, act=action: self.on_change_cb(act))
+            btn.on_clicked(lambda event, act=action: self.buttons_cb(act))
             self.buttons.append(btn)
 
 
-class xyz_mouse:
+class mouse_3D:
 
     def __init__(self, plt, ax, on_click_cb, on_move_cb):
         self.plt = plt
