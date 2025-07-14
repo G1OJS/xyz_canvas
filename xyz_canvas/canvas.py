@@ -15,8 +15,9 @@ class make_objects:
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.marker = None
         self.lines = []
+        self.plotted_lines = []
         self.current_line = None
-        self.isSelected = False
+        self.selected_line_end = None
         self.init_canvas()
         self.on_complete_cb = on_complete_cb
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
@@ -40,13 +41,29 @@ class make_objects:
             plt.close()
 
     def on_pointer_move(self, xyz):
-        pass
+        if(self.selected_line_end):
+            l_ind, e_ind = self.selected_line_end
+            line_ends = self.lines[l_ind]
+            self.ax.plot(*_interleave(line_ends), color='white')
+            self.lines[l_ind][e_ind] = xyz  # mod this like the pullout
+            line_ends = self.lines[l_ind]
+            self.ax.plot(*_interleave(line_ends), color='red')
+            print("moving")
+            self.ax.figure.canvas.draw_idle()
         
     def on_pointer_click(self, xyz):
-        if self.current_line == None:
-            self.start_line(xyz)
+        if(self.selected_line_end):
+            self.selected_line_end = None
         else:
-            self.complete_line(xyz)
+            test = self.at_endpoint(xyz)
+            if(test):
+                self.selected_line_end = test
+            else:
+                if self.current_line == None:
+                    self.start_line(xyz)
+                else:
+                    self.complete_line(xyz)
+                    
 
     def start_line(self,xyz):
         xs, ys, zs = xyz
@@ -61,7 +78,17 @@ class make_objects:
         self.current_line = None
         self.marker.remove()
         self.ax.figure.canvas.draw_idle()
-        self.ax.plot(*_interleave(line_ends), color='red')
+        self.plotted_lines.append(self.ax.plot(*_interleave(line_ends), color='red'))
+
+    def at_endpoint(self,xyz):
+        for line_index, l in enumerate(self.lines):
+            for end_index, p in enumerate([l[0],l[1]]):
+                if self.is_in_box(xyz,p,0.05):
+                    return(line_index,end_index)
+        return None
+
+    def is_in_box(self,p1,p2,tol):
+        return(abs(p1[0]-p2[0])<tol and abs(p1[1]-p2[1])<tol and abs(p1[2]-p2[2])<tol)
 
 class buttons:
     def __init__(self, plt, fig, buttons_cb):
