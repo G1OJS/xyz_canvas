@@ -45,15 +45,18 @@ class make_objects:
     def on_pointer_move(self, xyz):
         if(self.selected_line_end):
             l_ind, e_ind = self.selected_line_end
-            line_ends = self.lines[l_ind]
-            self.ax.plot(*_interleave(line_ends), color='white')
-
-            p = self.lines[l_ind][e_ind]
-            self.lines[l_ind][e_ind] = [xyz[0], xyz[1], p[2]]
+            # move the end away from the backplane by keeping Z as originally placed
+            # and only changing x and y, at least one of which will have been set at zero
+            # this could be modified to fix x if y or z is zero, and y if x or z is zero
             
             line_ends = self.lines[l_ind]
+            p = self.lines[l_ind][e_ind]
+            self.lines[l_ind][e_ind] = [xyz[0], xyz[1], p[2]]
+            line_ends = self.lines[l_ind]
+
+            # redraw the line
+            self.ax.cla()
             self.ax.plot(*_interleave(line_ends), color='red')
-            print("moving")
             self.ax.figure.canvas.draw_idle()
         
     def on_pointer_click(self, xyz):
