@@ -64,7 +64,6 @@ class make_objects:
                 else:
                     self.complete_line(xyz)
                     
-
     def start_line(self,xyz):
         xs, ys, zs = xyz
         self.current_line = [xs,ys,zs]
@@ -125,17 +124,28 @@ class mouse_3D:
         self.on_move_cb = on_move_cb
         self.in_axes_range_prev = False
         self.plt.connect('motion_notify_event', self.on_move)
-    
+
+    def get_true_3d(self,p):
+        # this is 100% accurate but not intuitive
+        p0 = self.pane_point
+        if(self.pane_plane == 'yz'):
+            return ([p[0],p0[1],p0[2]])
+        if(self.pane_plane == 'xz'):
+            return ([p0[0],p[1],p0[2]])
+        if(self.pane_plane == 'xy'):
+            return ([p0[0],p0[1],p[2]])
+
     def on_move(self, event):
         global in_axes_range_prev
         if event.inaxes:
             if type(getattr(self.ax, 'invM', None)) is None:
                 return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
-            p = self._get_pane_coords(s)
+            pt, pln = self._get_pane_coords(s)
             in_axes_range_now = self._in_axes_range(p)
-            self.movedto_xyz = p
-            self.on_move_cb(p)
+            self.movedto_xyz = pt
+
+            self.on_move_cb(pt)
             if(not (in_axes_range_now == self.in_axes_range_prev)):
                 if in_axes_range_now:
                     self.ax.mouse_init(rotate_btn=0)
@@ -149,9 +159,9 @@ class mouse_3D:
     def on_click(self, event):
         if event.button is MouseButton.LEFT:
             s = self.ax.format_coord(event.xdata, event.ydata)
-            p = self._get_pane_coords(s)
-            if(self._in_axes_range(p)):
-                self.on_click_cb(p)
+            pt, pln = self._get_pane_coords(s)
+            if(self._in_axes_range(pt)):
+                self.on_click_cb(pt)
             
     def _get_pane_coords(self, s):
         # gets x,y,z of mouse position from s=ax.format_coord(event.xdata, event.ydata)
@@ -164,7 +174,14 @@ class mouse_3D:
             ordinate = valstr.split("=")[0].strip()
             i = ['x','y','z'].index(ordinate)
             xyz[i]=float(valstr.split("=")[1].replace('−','-'))
-        return xyz
+        if('x pane' in s):
+            pln = 'yz'
+        if('y pane' in s):
+            pln =  'xz'
+        if('z pane' in s):
+            pln =  'xy'
+        return xyz, pln
+
 
     def _in_axes_range(self, p):
         # determines if x,y and z are all in the axis ranges
@@ -174,6 +191,3 @@ class mouse_3D:
         y_in = self.ax.get_ylim()[0] <= p[1] <= self.ax.get_ylim()[1]
         z_in = self.ax.get_zlim()[0] <= p[2] <= self.ax.get_zlim()[1]
         return (x_in and y_in and z_in)
-
-
-
