@@ -1,5 +1,6 @@
 
 import matplotlib.pyplot as plt
+import mpl_toolkits.mplot3d as mpl
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backend_tools import Cursors
 from matplotlib.widgets import Button
@@ -18,8 +19,11 @@ class make_objects:
         self.lines = []
         self.plotted_lines = []
         self.current_line = None
-        self.selected_line_end = None
-        self.selected_line_end_pane_idx = None
+
+        self.selectable_line_end_indices = None
+        self.selected_line_end_indices = None
+        self.mouse_end_pane_idx_on_grab = None
+
         self.init_canvas()
         self.on_complete_cb = on_complete_cb
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
@@ -63,40 +67,42 @@ class make_objects:
         elif action == 'exit':
             plt.close()
 
-    def on_pointer_move(self, xyz):
-        if(self.selected_line_end and (not self.selected_line_end_pane_idx == None)):
-            l_ind, e_ind = self.selected_line_end
+    def on_pointer_move(self, xyz, xy): 
+        if(self.selected_line_end_indices and not (self.mouse_end_pane_idx_on_grab == None)):
+            l_ind, e_ind = self.selected_line_end_indices
             line_ends = self.lines[l_ind]
             xyz_end = self.lines[l_ind][e_ind]
 
             # move the end away from the backplane by keeping one of x,y,z as originally placed
-            fix_idx = (self.selected_line_end_pane_idx+1) % 3
+            fix_idx = (self.mouse_end_pane_idx_on_grab + 1) % 3
+            print (fix_idx)
             xyz[fix_idx] = xyz_end[fix_idx]            
             self.lines[l_ind][e_ind] = xyz
 
-            # redraw with frame lines
-            self.redraw_lines(showframe_xyz=xyz)
+            self.redraw_lines(showframe_xyz = xyz) 
         else:
             if(not self.current_line):          # if not drawing a line
-                test = self.at_endpoint(xyz)    # if near a line end
-                if (not test == None):          # show move possibility via cursor and frame lines
-                    self.fig.canvas.set_cursor(Cursors.MOVE)
+                self.check_for_selectable_end(xy)
+                if (self.selectable_line_end_indices):  # show move possibility via cursor and frame lines
+                    self.fig.canvas.set_cursor(Cursors.HAND)
+                    l_ind, e_ind = self.selectable_line_end_indices
+                    xyz = self.lines[l_ind][e_ind]
                     self.redraw_lines(showframe_xyz=xyz)
                 else:
                     self.redraw_lines()         # redraw without frame lines
                     self.fig.canvas.set_cursor(Cursors.POINTER)  # put pointer cursor back
         
+        
     def on_pointer_click(self, xyz):
-        if(self.selected_line_end):
-            self.selected_line_end = None
+        if(self.selected_line_end_indices):
+            self.selected_line_end_indices = None
             self.redraw_lines()
         else:
-            test = self.at_endpoint(xyz)
-            if(test):
-                self.selected_line_end = test
-                l_ind, e_ind = test
+            if(self.selectable_line_end_indices):
+                self.selected_line_end_indices = self.selectable_line_end_indices
+                l_ind, e_ind = self.selected_line_end_indices
                 xyz_end = self.lines[l_ind][e_ind]
-                self.selected_line_end_pane_idx = self.get_end_pane_idx(xyz_end)
+                self.mouse_end_pane_idx_on_grab = self.get_end_pane_idx(xyz)
             else:
                 if self.current_line == None:
                     self.start_line(xyz)
@@ -132,17 +138,20 @@ class make_objects:
         self.ax.figure.canvas.draw_idle()
         self.plotted_lines.append(self.ax.plot(*_interleave(line_ends), color='red'))
 
-    def at_endpoint(self,xyz):
+    def check_for_selectable_end(self,xy):
+        from mpl_toolkits.mplot3d import proj3d
+        width, height = self.fig.canvas.get_width_height()
+        pix_tol = 5
+        x_tol, y_tol = [pix_tol/width, pix_tol/height]
         for line_index, l in enumerate(self.lines):
             for end_index, p in enumerate([l[0],l[1]]):
-                if self.is_in_box(xyz,p,0.05):
-                    return(line_index,end_index)
-        return None
+                x,y,_= proj3d.proj_transform(p[0], p[1], p[2], self.ax.get_proj())
+                if(abs(x-xy[0])< x_tol and abs(y-xy[1])<y_tol):
+                    self.selectable_line_end_indices=[line_index, end_index]
+                    return
+        self.selectable_line_end_indices = None
+        return
 
-    def is_in_box(self,p1,p2,tol):
-        # this could probably be rewritten using the ray instead of xyz
-        # to allow picking up line ends that are away from all three panes
-        return(abs(p1[0]-p2[0])<tol and abs(p1[1]-p2[1])<tol and abs(p1[2]-p2[2])<tol)
 
 class buttons:
     def __init__(self, plt, fig, buttons_cb):
@@ -190,7 +199,7 @@ class mouse_3D:
             in_axes_range_now = self._in_axes_range(pt)
             self.movedto_xyz = pt
 
-            self.on_move_cb(pt)
+            self.on_move_cb(pt,[float(event.xdata), float(event.ydata)] )
             if(not (in_axes_range_now == self.in_axes_range_prev)):
                 if in_axes_range_now:
                     self.ax.mouse_init(rotate_btn=0)
