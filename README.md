@@ -1,21 +1,18 @@
 # xyz_canvas
 Interactive canvas for editing 3D geometry, using matplotlib.pyplot
 
-This is a demo of xyz_canvas (pre-release, V0.2.1), a Python library to add, edit, and connect 3D wire-frame objects
-using only Matplotlib. The idea is that this will be called by code that needs the 
-user to define / edit these objects in 3D space.
+This is a demo of xyz_canvas (pre-release, V0.2.1), a Python library intended to add, edit, and connect 3D wire-frame objects using only Matplotlib. 
 
-Currently, only lines are supported but the plan is to include at least lines, rectangles, 
-arcs (circles) and helices. Shape types are seleced via the buttons next to the geometry display.
-The clear button is implemented, as is Exit & Close and List, but the others are placeholders.
+The idea is that this will be called by code that needs the  user to define / edit these objects in 3D space.
 
-To add a line, click two points within the axis space (note that no feedback is given for the first click).
+Currently, only lines are supported. An object consists of one or more lines. Pressing 'save' fires the callback with the set of added lines as an argument.
 
-The view may be rotated at any time by clicking and dragging just oustide the axis space.
+To add a line, click two points within the axis space. The view may be rotated at any time by clicking and dragging just oustide the axis space.
 
-Currently, endpoints / vertices are pinned to the 'closest' backplane (shaded & gridded).
-Methods to move vertices into general 3D space by clicking and typing co-ordinates,
-snapping to a 3D grid / other objects,  will be added soon.
+# Known issues
+Currently, when you add a line, both ends are pinned to the 'closest' backplane (shaded & gridded). You may add a line from one plane to another, but neither end of the line can have all three co-ordinates nonzero.
+I'm experimenting with ways to overcome this without making the UI clunky. The current version here achieves this by allowing line ends to be picked up (click on them) and dragged away from their plane. However, once 'dropped' they can't be selected again.
+
 
 ## Installation
 Install with pip:
