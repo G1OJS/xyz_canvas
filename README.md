@@ -26,4 +26,5 @@ pip install xyz_canvas
 ```
 
 ## Demo Screenshot
-![Capture](https://github.com/user-attachments/assets/bef782f9-881b-49ec-9d26-ba7cdd4d5867)
+
+![Capture](https://github.com/user-attachments/assets/aea93646-d451-4597-84dc-5f81d00c52bf)
