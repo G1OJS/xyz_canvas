@@ -25,9 +25,11 @@ class make_objects:
 
     def init_canvas(self):
         self.objects = []
+        self.ax.cla()
         self.ax.set_xlim([0,1])
         self.ax.set_ylim([0,1])
         self.ax.set_zlim([0,1])
+        self.ax.figure.canvas.draw_idle()
         self.buttons = buttons(plt, self.fig, self.on_button_press)
         print("Scene initialised")
 
@@ -45,7 +47,10 @@ class make_objects:
             l_ind, e_ind = self.selected_line_end
             line_ends = self.lines[l_ind]
             self.ax.plot(*_interleave(line_ends), color='white')
-            self.lines[l_ind][e_ind] = xyz  # mod this like the pullout
+
+            p = self.lines[l_ind][e_ind]
+            self.lines[l_ind][e_ind] = [xyz[0], xyz[1], p[2]]
+            
             line_ends = self.lines[l_ind]
             self.ax.plot(*_interleave(line_ends), color='red')
             print("moving")
@@ -125,16 +130,6 @@ class mouse_3D:
         self.in_axes_range_prev = False
         self.plt.connect('motion_notify_event', self.on_move)
 
-    def get_true_3d(self,p):
-        # this is 100% accurate but not intuitive
-        p0 = self.pane_point
-        if(self.pane_plane == 'yz'):
-            return ([p[0],p0[1],p0[2]])
-        if(self.pane_plane == 'xz'):
-            return ([p0[0],p[1],p0[2]])
-        if(self.pane_plane == 'xy'):
-            return ([p0[0],p0[1],p[2]])
-
     def on_move(self, event):
         global in_axes_range_prev
         if event.inaxes:
@@ -142,7 +137,7 @@ class mouse_3D:
                 return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
             pt, pln = self._get_pane_coords(s)
-            in_axes_range_now = self._in_axes_range(p)
+            in_axes_range_now = self._in_axes_range(pt)
             self.movedto_xyz = pt
 
             self.on_move_cb(pt)
@@ -165,21 +160,23 @@ class mouse_3D:
             
     def _get_pane_coords(self, s):
         # gets x,y,z of mouse position from s=ax.format_coord(event.xdata, event.ydata)
-        s=s.split(",")
-        if('elevation' in s[0]):
+        if('elevation' in s):
             return None
-        xyz=[0,0,0]
-        for valstr in s:
-            valstr=valstr.replace(' pane','')
-            ordinate = valstr.split("=")[0].strip()
-            i = ['x','y','z'].index(ordinate)
-            xyz[i]=float(valstr.split("=")[1].replace('−','-'))
+        
         if('x pane' in s):
             pln = 'yz'
         if('y pane' in s):
             pln =  'xz'
         if('z pane' in s):
             pln =  'xy'
+        s=s.split(",")
+        xyz=[0,0,0]
+        for valstr in s:
+            valstr=valstr.replace(' pane','')
+            ordinate = valstr.split("=")[0].strip()
+            i = ['x','y','z'].index(ordinate)
+            xyz[i]=float(valstr.split("=")[1].replace('−','-'))
+
         return xyz, pln
 
 
