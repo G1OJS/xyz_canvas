@@ -16,6 +16,8 @@ Currently, when you *add* a line, both ends are pinned to the 'closest' backplan
 
 I'm experimenting with ways to overcome this without making the UI clunky. The current version here achieves this by allowing line ends to be picked up (click on them) and dragged away from their plane. However, once 'dropped', if they are dropped away from all three backplanes, they can't be selected again.
 
+More trivially, I need to add a 'delete most recent' button alongside the 'clear' (all) button.
+
 
 ## Installation
 Install with pip:
