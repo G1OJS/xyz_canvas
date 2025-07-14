@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import MouseButton
+from matplotlib.backend_tools import Cursors
 from matplotlib.widgets import Button
 
 def _interleave(ends):
@@ -18,21 +19,41 @@ class make_objects:
         self.plotted_lines = []
         self.current_line = None
         self.selected_line_end = None
+        self.selected_line_end_pane_idx = None
         self.init_canvas()
         self.on_complete_cb = on_complete_cb
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
         plt.show()
 
-    def init_canvas(self):
-        self.objects = []
-        self.ax.cla()
+    def init_axes(self):
         self.ax.set_xlim([0,1])
         self.ax.set_ylim([0,1])
         self.ax.set_zlim([0,1])
+        self.ax.set_xlabel('x')
+        self.ax.set_ylabel('y')
+        self.ax.set_zlabel('z')
+
+    def init_canvas(self):
+        self.objects = []
+        self.ax.cla()
+        self.init_axes()
         self.ax.figure.canvas.draw_idle()
         self.buttons = buttons(plt, self.fig, self.on_button_press)
         print("Scene initialised")
 
+    def redraw_lines(self, showframe_xyz=None):
+        self.ax.cla()
+        self.init_axes()
+        for l in self.lines:
+            self.ax.plot(*_interleave(l), color='red')
+        self.ax.figure.canvas.draw_idle()
+        if(showframe_xyz):
+            xyz=showframe_xyz
+            self.ax.plot(*_interleave([xyz,  [xyz[0], xyz[1], 0] ]),color='grey', linestyle='--')
+            self.ax.plot(*_interleave([xyz,  [xyz[0], 1, xyz[2]] ]),color='grey', linestyle='--')
+            self.ax.plot(*_interleave([xyz,  [0, xyz[1], xyz[2]] ]),color='grey', linestyle='--')
+            x,y,z = xyz[0],xyz[1],xyz[2]
+            self.ax.text(x,y,z,f"  ({x:.3f}, {y:.3f}, {z:.3f})", size = 'small')
 
     def on_button_press(self,action):
         if action == 'clear':
@@ -43,34 +64,58 @@ class make_objects:
             plt.close()
 
     def on_pointer_move(self, xyz):
-        if(self.selected_line_end):
+        if(self.selected_line_end and (not self.selected_line_end_pane_idx == None)):
             l_ind, e_ind = self.selected_line_end
-            # move the end away from the backplane by keeping Z as originally placed
-            # and only changing x and y, at least one of which will have been set at zero
-            # this could be modified to fix x if y or z is zero, and y if x or z is zero
-            
             line_ends = self.lines[l_ind]
-            p = self.lines[l_ind][e_ind]
-            self.lines[l_ind][e_ind] = [xyz[0], xyz[1], p[2]]
-            line_ends = self.lines[l_ind]
+            xyz_end = self.lines[l_ind][e_ind]
 
-            # redraw the line
-            self.ax.cla()
-            self.ax.plot(*_interleave(line_ends), color='red')
-            self.ax.figure.canvas.draw_idle()
+            # move the end away from the backplane by keeping one of x,y,z as originally placed
+            fix_idx = (self.selected_line_end_pane_idx+1) % 3
+            xyz[fix_idx] = xyz_end[fix_idx]            
+            self.lines[l_ind][e_ind] = xyz
+
+            # redraw with frame lines
+            self.redraw_lines(showframe_xyz=xyz)
+        else:
+            if(not self.current_line):          # if not drawing a line
+                test = self.at_endpoint(xyz)    # if near a line end
+                if (not test == None):          # show move possibility via cursor and frame lines
+                    self.fig.canvas.set_cursor(Cursors.MOVE)
+                    self.redraw_lines(showframe_xyz=xyz)
+                else:
+                    self.redraw_lines()         # redraw without frame lines
+                    self.fig.canvas.set_cursor(Cursors.POINTER)  # put pointer cursor back
         
     def on_pointer_click(self, xyz):
         if(self.selected_line_end):
             self.selected_line_end = None
+            self.redraw_lines()
         else:
             test = self.at_endpoint(xyz)
             if(test):
                 self.selected_line_end = test
+                l_ind, e_ind = test
+                xyz_end = self.lines[l_ind][e_ind]
+                self.selected_line_end_pane_idx = self.get_end_pane_idx(xyz_end)
             else:
                 if self.current_line == None:
                     self.start_line(xyz)
                 else:
                     self.complete_line(xyz)
+
+    def get_end_pane_idx(self,xyz):
+        # needs rewrite to cope with general axis limits not [0,1] for all as in this demo
+        # currently looks for a 0 or 1 in the x,y,z to identify the pane that set the point
+        try:
+            ep_idx = xyz.index(0)
+        except:
+            ep_idx = None
+        if (ep_idx == None):
+            try:
+                ep_idx = xyz.index(1)
+            except:
+                ep_idx = None
+        return ep_idx
                     
     def start_line(self,xyz):
         xs, ys, zs = xyz
@@ -95,6 +140,8 @@ class make_objects:
         return None
 
     def is_in_box(self,p1,p2,tol):
+        # this could probably be rewritten using the ray instead of xyz
+        # to allow picking up line ends that are away from all three panes
         return(abs(p1[0]-p2[0])<tol and abs(p1[1]-p2[1])<tol and abs(p1[2]-p2[2])<tol)
 
 class buttons:
@@ -112,7 +159,7 @@ class buttons:
 
         buttons = [
             ('Clear canvas', 'clear'),
-            ('Save last obj', 'save'),
+            ('Save', 'save'),
             ('Exit', 'exit'),
             ]
 
@@ -139,7 +186,7 @@ class mouse_3D:
             if type(getattr(self.ax, 'invM', None)) is None:
                 return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
-            pt, pln = self._get_pane_coords(s)
+            pt = self._get_pane_coords(s)
             in_axes_range_now = self._in_axes_range(pt)
             self.movedto_xyz = pt
 
@@ -157,7 +204,7 @@ class mouse_3D:
     def on_click(self, event):
         if event.button is MouseButton.LEFT:
             s = self.ax.format_coord(event.xdata, event.ydata)
-            pt, pln = self._get_pane_coords(s)
+            pt = self._get_pane_coords(s)
             if(self._in_axes_range(pt)):
                 self.on_click_cb(pt)
             
@@ -166,12 +213,6 @@ class mouse_3D:
         if('elevation' in s):
             return None
         
-        if('x pane' in s):
-            pln = 'yz'
-        if('y pane' in s):
-            pln =  'xz'
-        if('z pane' in s):
-            pln =  'xy'
         s=s.split(",")
         xyz=[0,0,0]
         for valstr in s:
@@ -180,7 +221,7 @@ class mouse_3D:
             i = ['x','y','z'].index(ordinate)
             xyz[i]=float(valstr.split("=")[1].replace('−','-'))
 
-        return xyz, pln
+        return xyz
 
 
     def _in_axes_range(self, p):
