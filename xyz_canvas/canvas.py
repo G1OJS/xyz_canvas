@@ -5,6 +5,7 @@ from matplotlib.backend_bases import MouseButton
 from matplotlib.backend_tools import Cursors
 from matplotlib.widgets import Button
 
+
 def _interleave(ends):
     a = ends[0]
     b = ends[1]
@@ -12,50 +13,61 @@ def _interleave(ends):
 
 class make_objects:
 
-    def __init__(self, on_complete_cb):
+# somewhere an index is 1 out of step becasuse can't select the first point
+
+    def __init__(self, on_complete_cb,
+                 xlim =[0,1], ylim =[0,1], zlim=[0,1],
+                 xlabel="x", ylabel="y", zlabel="z"):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
-        self.marker = None
-        self.lines = []
-        self.plotted_lines = []
-        self.current_line = None
-
-        self.selectable_line_end_indices = None
-        self.selected_line_end_indices = None
-        self.mouse_end_pane_idx_on_grab = None
-
+        self.xlim=xlim
+        self.ylim=ylim
+        self.zlim=zlim
+        self.xlabel=xlabel
+        self.ylabel=ylabel
+        self.zlabel=zlabel
+        self.point_xyz = None
+        self.points_xyz = []
+     #   self.marker = None
+        self.selectable_point_index = None
+        self.selected_point_index = None
+        self.mouse_end_pane_idx_on_select = None
         self.init_canvas()
         self.on_complete_cb = on_complete_cb
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
         plt.show()
 
     def init_axes(self):
-        self.ax.set_xlim([0,1])
-        self.ax.set_ylim([0,1])
-        self.ax.set_zlim([0,1])
-        self.ax.set_xlabel('x')
-        self.ax.set_ylabel('y')
-        self.ax.set_zlabel('z')
+        self.ax.set_xlim(self.xlim)
+        self.ax.set_ylim(self.ylim)
+        self.ax.set_zlim(self.zlim)
+        self.ax.set_xlabel(self.xlabel)
+        self.ax.set_ylabel(self.ylabel)
+        self.ax.set_zlabel(self.zlabel)
 
     def init_canvas(self):
-        self.objects = []
+        self.points_xyz = []
         self.ax.cla()
         self.init_axes()
         self.ax.figure.canvas.draw_idle()
         self.buttons = buttons(plt, self.fig, self.on_button_press)
         print("Scene initialised")
 
-    def redraw_lines(self, showframe_xyz=None):
+    def redraw(self, showframe_xyz=None):
         self.ax.cla()
         self.init_axes()
-        for l in self.lines:
-            self.ax.plot(*_interleave(l), color='red')
+        for p in self.points_xyz:
+            x,y,z = p
+            self.ax.scatter(x,y,z, color='blue', marker='o', s=50)
         self.ax.figure.canvas.draw_idle()
         if(showframe_xyz):
-            xyz=showframe_xyz
-            self.ax.plot(*_interleave([xyz,  [xyz[0], xyz[1], 0] ]),color='grey', linestyle='--')
-            self.ax.plot(*_interleave([xyz,  [xyz[0], 1, xyz[2]] ]),color='grey', linestyle='--')
-            self.ax.plot(*_interleave([xyz,  [0, xyz[1], xyz[2]] ]),color='grey', linestyle='--')
+            xyz = showframe_xyz
+            xy_plane_z = self.zlim[0]
+            xz_plane_y = self.ylim[1]
+            yz_plane_x = self.xlim[0]
+            self.ax.plot(*_interleave([xyz,  [xyz[0], xyz[1], xy_plane_z] ]),color='grey', linestyle='--')
+            self.ax.plot(*_interleave([xyz,  [xyz[0], xz_plane_y, xyz[2]] ]),color='grey', linestyle='--')
+            self.ax.plot(*_interleave([xyz,  [yz_plane_x, xyz[1], xyz[2]] ]),color='grey', linestyle='--')
             x,y,z = xyz[0],xyz[1],xyz[2]
             self.ax.text(x,y,z,f"  ({x:.3f}, {y:.3f}, {z:.3f})", size = 'small')
 
@@ -63,93 +75,68 @@ class make_objects:
         if action == 'clear':
             self.init_canvas()
         elif action == 'save':
-            self.on_complete_cb(self.lines)
+            self.on_complete_cb(self.points_xyz)
         elif action == 'exit':
             plt.close()
 
-    def on_pointer_move(self, xyz, xy): 
-        if(self.selected_line_end_indices and not (self.mouse_end_pane_idx_on_grab == None)):
-            l_ind, e_ind = self.selected_line_end_indices
-            line_ends = self.lines[l_ind]
-            xyz_end = self.lines[l_ind][e_ind]
-
-            # move the end away from the backplane by keeping one of x,y,z as originally placed
-            fix_idx = (self.mouse_end_pane_idx_on_grab + 1) % 3
-            print (fix_idx)
-            xyz[fix_idx] = xyz_end[fix_idx]            
-            self.lines[l_ind][e_ind] = xyz
-
-            self.redraw_lines(showframe_xyz = xyz) 
+    def on_pointer_move(self, xyz, xy, ep_idx): #and not (self.mouse_end_pane_idx_on_select == None)
+        print(f"move with selected point {self.selected_point_index}")
+        if(not (self.selected_point_index == None)):
+            point_xyz = self.points_xyz[self.selected_point_index]
+            print(point_xyz)
+            # move the point away from the backplane by keeping one of x,y,z as originally placed
+            fix_idx = (self.mouse_end_pane_idx_on_select + 1) % 3
+            xyz[fix_idx] = point_xyz[fix_idx]            
+            self.points_xyz[self.selected_point_index] = xyz
+            self.redraw(showframe_xyz = xyz) 
         else:
-            if(not self.current_line):          # if not drawing a line
-                self.check_for_selectable_end(xy)
-                if (self.selectable_line_end_indices):  # show move possibility via cursor and frame lines
-                    self.fig.canvas.set_cursor(Cursors.HAND)
-                    l_ind, e_ind = self.selectable_line_end_indices
-                    xyz = self.lines[l_ind][e_ind]
-                    self.redraw_lines(showframe_xyz=xyz)
-                else:
-                    self.redraw_lines()         # redraw without frame lines
-                    self.fig.canvas.set_cursor(Cursors.POINTER)  # put pointer cursor back
-        
-        
-    def on_pointer_click(self, xyz):
-        if(self.selected_line_end_indices):
-            self.selected_line_end_indices = None
-            self.redraw_lines()
-        else:
-            if(self.selectable_line_end_indices):
-                self.selected_line_end_indices = self.selectable_line_end_indices
-                l_ind, e_ind = self.selected_line_end_indices
-                xyz_end = self.lines[l_ind][e_ind]
-                self.mouse_end_pane_idx_on_grab = self.get_end_pane_idx(xyz)
+            self.check_for_selectable_point(xy)
+            if (self.selectable_point_index):  # show move possibility via cursor and frame lines
+                self.fig.canvas.set_cursor(Cursors.HAND)
+                p_ind= self.selectable_point_index
+                xyz = self.points_xyz[p_ind]
+                self.redraw(showframe_xyz = xyz)
             else:
-                if self.current_line == None:
-                    self.start_line(xyz)
-                else:
-                    self.complete_line(xyz)
+                self.redraw(showframe_xyz = None)         # redraw without frame lines
+                self.fig.canvas.set_cursor(Cursors.POINTER)  # put pointer cursor back
+        
+        
+    def on_pointer_click(self, xyz, ep_idx):
+        if(self.selected_point_index):
+            self.selected_point_index = None
+            self.redraw(showframe_xyz = None)
+        else:
+            if(not (self.selectable_point_index == None)):
+                self.selected_point_index = self.selectable_point_index
+                p_ind = self.selected_point_index
+                self.point_xyz = self.points_xyz[p_ind]
+            else:
+                self.point_xyz = xyz
+                self.selected_point_index = len(self.points_xyz)
+                self.points_xyz.append(self.point_xyz)
+                x, y, z = xyz
+                self.redraw(showframe_xyz = xyz)
+                print(f"New point {xyz} index {self.selected_point_index}")
+            self.mouse_end_pane_idx_on_select = ep_idx
+            print(f"self.mouse_end_pane_idx_on_select {self.mouse_end_pane_idx_on_select}")      
 
-    def get_end_pane_idx(self,xyz):
-        # needs rewrite to cope with general axis limits not [0,1] for all as in this demo
-        # currently looks for a 0 or 1 in the x,y,z to identify the pane that set the point
-        try:
-            ep_idx = xyz.index(0)
-        except:
-            ep_idx = None
-        if (ep_idx == None):
-            try:
-                ep_idx = xyz.index(1)
-            except:
-                ep_idx = None
-        return ep_idx
-                    
-    def start_line(self,xyz):
-        xs, ys, zs = xyz
-        self.current_line = [xs,ys,zs]
-        self.marker = self.ax.scatter([xs], [ys], [zs], color='red', marker='o', s=50)
+    def save_point(self,xyz):
+        x, y, z = xyz
+        self.redraw(showframe_xyz = None)
         self.ax.figure.canvas.draw_idle()
+        self.plotted_points.append(self.ax.scatter(x,y,z, color='blue', marker='o', s=50))
 
-    def complete_line(self,xyz):
-        xe, ye, ze = xyz
-        line_ends = [self.current_line,[xe,ye,ze]]
-        self.lines.append(line_ends)
-        self.current_line = None
-        self.marker.remove()
-        self.ax.figure.canvas.draw_idle()
-        self.plotted_lines.append(self.ax.plot(*_interleave(line_ends), color='red'))
-
-    def check_for_selectable_end(self,xy):
+    def check_for_selectable_point(self,xy):
         from mpl_toolkits.mplot3d import proj3d
         width, height = self.fig.canvas.get_width_height()
         pix_tol = 5
         x_tol, y_tol = [pix_tol/width, pix_tol/height]
-        for line_index, l in enumerate(self.lines):
-            for end_index, p in enumerate([l[0],l[1]]):
-                x,y,_= proj3d.proj_transform(p[0], p[1], p[2], self.ax.get_proj())
-                if(abs(x-xy[0])< x_tol and abs(y-xy[1])<y_tol):
-                    self.selectable_line_end_indices=[line_index, end_index]
-                    return
-        self.selectable_line_end_indices = None
+        for p_ind, p in enumerate(self.points_xyz):
+            x,y,_= proj3d.proj_transform(p[0], p[1], p[2], self.ax.get_proj())
+            if(abs(x-xy[0])< x_tol and abs(y-xy[1])<y_tol):
+                self.selectable_point_index = p_ind
+                return
+        self.selectable_point_index = None
         return
 
 
@@ -195,11 +182,10 @@ class mouse_3D:
             if type(getattr(self.ax, 'invM', None)) is None:
                 return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
-            pt = self._get_pane_coords(s)
+            pt, ep_idx = self._get_pane_coords(s)
             in_axes_range_now = self._in_axes_range(pt)
             self.movedto_xyz = pt
-
-            self.on_move_cb(pt,[float(event.xdata), float(event.ydata)] )
+            self.on_move_cb(pt,[float(event.xdata), float(event.ydata)], ep_idx )
             if(not (in_axes_range_now == self.in_axes_range_prev)):
                 if in_axes_range_now:
                     self.ax.mouse_init(rotate_btn=0)
@@ -213,9 +199,12 @@ class mouse_3D:
     def on_click(self, event):
         if event.button is MouseButton.LEFT:
             s = self.ax.format_coord(event.xdata, event.ydata)
-            pt = self._get_pane_coords(s)
+            info = self._get_pane_coords(s)
+            if (info == None):
+                return
+            pt, ep_idx = info
             if(self._in_axes_range(pt)):
-                self.on_click_cb(pt)
+                self.on_click_cb(pt, ep_idx)
             
     def _get_pane_coords(self, s):
         # gets x,y,z of mouse position from s=ax.format_coord(event.xdata, event.ydata)
@@ -224,13 +213,15 @@ class mouse_3D:
         
         s=s.split(",")
         xyz=[0,0,0]
-        for valstr in s:
+        for idx, valstr in enumerate(s):
+            if(' pane' in valstr):
+                end_pane_idx = idx
             valstr=valstr.replace(' pane','')
             ordinate = valstr.split("=")[0].strip()
             i = ['x','y','z'].index(ordinate)
             xyz[i]=float(valstr.split("=")[1].replace('−','-'))
 
-        return xyz
+        return xyz, end_pane_idx
 
 
     def _in_axes_range(self, p):
