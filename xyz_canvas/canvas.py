@@ -11,9 +11,7 @@ def _interleave(ends):
     b = ends[1]
     return [a[0],b[0]], [a[1],b[1]], [a[2],b[2]]
 
-class make_objects:
-
-# somewhere an index is 1 out of step becasuse can't select the first point
+class define_points:
 
     def __init__(self, on_complete_cb,
                  xlim =[0,1], ylim =[0,1], zlim=[0,1],
@@ -26,9 +24,7 @@ class make_objects:
         self.xlabel=xlabel
         self.ylabel=ylabel
         self.zlabel=zlabel
-        self.point_xyz = None
         self.points_xyz = []
-     #   self.marker = None
         self.selectable_point_index = None
         self.selected_point_index = None
         self.mouse_end_pane_idx_on_select = None
@@ -51,7 +47,6 @@ class make_objects:
         self.init_axes()
         self.ax.figure.canvas.draw_idle()
         self.buttons = buttons(plt, self.fig, self.on_button_press)
-        print("Scene initialised")
 
     def redraw(self, showframe_xyz=None):
         self.ax.cla()
@@ -79,52 +74,44 @@ class make_objects:
         elif action == 'exit':
             plt.close()
 
-    def on_pointer_move(self, xyz, xy, ep_idx): #and not (self.mouse_end_pane_idx_on_select == None)
-        print(f"move with selected point {self.selected_point_index}")
+    def on_pointer_click(self, xyz, ep_idx):
+        # If we click whilst moving a point, drop it.
+        # Note that its xyz will have been updated during the move to this point
+        if(not(self.selected_point_index == None)):        
+            self.selected_point_index = None   
+            self.redraw(showframe_xyz = None)
+        else:
+        # we were just roaming and clicked
+            # so if we are over a point and clicked on it, select it
+            if(not (self.selectable_point_index == None)):  
+                self.selected_point_index = self.selectable_point_index    
+            else:
+            # if there's nothing to select,  append the point and immediately select it
+                self.points_xyz.append(xyz)         
+                self.selected_point_index = len(self.points_xyz) - 1        
+                self.redraw(showframe_xyz = xyz)
+            # whether new or existing, record the ep_idx of the selected point,
+            # at the start of its move, for on_pointer_move to use
+            self.mouse_end_pane_idx_on_select = ep_idx
+
+    def on_pointer_move(self, xyz, xy, ep_idx):
+        # If we have a point selected, 
         if(not (self.selected_point_index == None)):
-            point_xyz = self.points_xyz[self.selected_point_index]
-            print(point_xyz)
             # move the point away from the backplane by keeping one of x,y,z as originally placed
             fix_idx = (self.mouse_end_pane_idx_on_select + 1) % 3
-            xyz[fix_idx] = point_xyz[fix_idx]            
+            xyz[fix_idx] = self.points_xyz[self.selected_point_index][fix_idx]           
             self.points_xyz[self.selected_point_index] = xyz
             self.redraw(showframe_xyz = xyz) 
         else:
+        # If we don't have a point selected, see if we could select one
             self.check_for_selectable_point(xy)
-            if (self.selectable_point_index):  # show move possibility via cursor and frame lines
+            # if we could, show that possibility via cursor and frame lines (or turn these off)
+            if (self.selectable_point_index):  
                 self.fig.canvas.set_cursor(Cursors.HAND)
-                p_ind= self.selectable_point_index
-                xyz = self.points_xyz[p_ind]
                 self.redraw(showframe_xyz = xyz)
             else:
-                self.redraw(showframe_xyz = None)         # redraw without frame lines
-                self.fig.canvas.set_cursor(Cursors.POINTER)  # put pointer cursor back
-        
-        
-    def on_pointer_click(self, xyz, ep_idx):
-        if(self.selected_point_index):
-            self.selected_point_index = None
-            self.redraw(showframe_xyz = None)
-        else:
-            if(not (self.selectable_point_index == None)):
-                self.selected_point_index = self.selectable_point_index
-                p_ind = self.selected_point_index
-                self.point_xyz = self.points_xyz[p_ind]
-            else:
-                self.point_xyz = xyz
-                self.selected_point_index = len(self.points_xyz)
-                self.points_xyz.append(self.point_xyz)
-                x, y, z = xyz
-                self.redraw(showframe_xyz = xyz)
-                print(f"New point {xyz} index {self.selected_point_index}")
-            self.mouse_end_pane_idx_on_select = ep_idx
-            print(f"self.mouse_end_pane_idx_on_select {self.mouse_end_pane_idx_on_select}")      
-
-    def save_point(self,xyz):
-        x, y, z = xyz
-        self.redraw(showframe_xyz = None)
-        self.ax.figure.canvas.draw_idle()
-        self.plotted_points.append(self.ax.scatter(x,y,z, color='blue', marker='o', s=50))
+                self.redraw(showframe_xyz = None)      
+                self.fig.canvas.set_cursor(Cursors.POINTER)  
 
     def check_for_selectable_point(self,xy):
         from mpl_toolkits.mplot3d import proj3d
@@ -174,6 +161,7 @@ class mouse_3D:
         self.on_click_cb = on_click_cb
         self.on_move_cb = on_move_cb
         self.in_axes_range_prev = False
+        self.click_binding_id = None
         self.plt.connect('motion_notify_event', self.on_move)
 
     def on_move(self, event):
@@ -182,16 +170,19 @@ class mouse_3D:
             if type(getattr(self.ax, 'invM', None)) is None:
                 return  # Avoid calling format_coord during redraw/rotation
             s = self.ax.format_coord(event.xdata, event.ydata)
-            pt, ep_idx = self._get_pane_coords(s)
+            info = self._get_pane_coords(s)
+            if (info == None):
+                return
+            pt, ep_idx = info[0], info[1]
+            xy = [float(event.xdata), float(event.ydata)]
             in_axes_range_now = self._in_axes_range(pt)
-            self.movedto_xyz = pt
-            self.on_move_cb(pt,[float(event.xdata), float(event.ydata)], ep_idx )
+            self.on_move_cb(pt,  xy, ep_idx)
             if(not (in_axes_range_now == self.in_axes_range_prev)):
                 if in_axes_range_now:
                     self.ax.mouse_init(rotate_btn=0)
-                    self.plt.connect('button_press_event', self.on_click)
+                    self.click_binding_id = self.plt.connect('button_press_event', self.on_click)
                 else:
-                    self.plt.disconnect(self.on_click)
+                    self.plt.disconnect(self.click_binding_id)
                     self.ax.mouse_init(rotate_btn=1)
                     event.button = None
                 self.in_axes_range_prev = in_axes_range_now
