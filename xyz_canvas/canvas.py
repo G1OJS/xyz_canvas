@@ -77,13 +77,13 @@ class define_points:
     def on_pointer_click(self, xyz, ep_idx):
         # If we click whilst moving a point, drop it.
         # Note that its xyz will have been updated during the move to this point
-        if(not(self.selected_point_index == None)):        
+        if(self.selected_point_index is not None):        
             self.selected_point_index = None   
             self.redraw(showframe_xyz = None)
         else:
         # we were just roaming and clicked
             # so if we are over a point and clicked on it, select it
-            if(not (self.selectable_point_index == None)):  
+            if(self.selectable_point_index is not None):  
                 self.selected_point_index = self.selectable_point_index    
             else:
             # if there's nothing to select,  append the point and immediately select it
@@ -96,7 +96,7 @@ class define_points:
 
     def on_pointer_move(self, xyz, xy, ep_idx):
         # If we have a point selected, 
-        if(not (self.selected_point_index == None)):
+        if(self.selected_point_index is not None):
             # move the point away from the backplane by keeping one of x,y,z as originally placed
             fix_idx = (self.mouse_end_pane_idx_on_select + 1) % 3
             xyz[fix_idx] = self.points_xyz[self.selected_point_index][fix_idx]           
@@ -106,7 +106,7 @@ class define_points:
         # If we don't have a point selected, see if we could select one
             self.check_for_selectable_point(xy)
             # if we could, show that possibility via cursor and frame lines (or turn these off)
-            if (self.selectable_point_index):  
+            if (self.selectable_point_index is not None):  
                 self.fig.canvas.set_cursor(Cursors.HAND)
                 self.redraw(showframe_xyz = xyz)
             else:
