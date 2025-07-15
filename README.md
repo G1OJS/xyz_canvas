@@ -4,6 +4,8 @@
 ### What is it?
 XYZ_canvas is provides the starting point to create Python code that allows defining and editing points in 3D space, using only Matplotlib and just over 200 lines of library in canvas.py. 
 
+![Capture](https://github.com/user-attachments/assets/f86f0481-d98e-4c0e-a972-32f408f90e2c)
+
 ### How can I use it?
 The demo.py program shows how simple it is to instantiate the canvas:
 ```
@@ -24,9 +26,6 @@ Install with pip:
 ```
 pip install xyz_canvas
 ```
-
-## Demo Screenshot
-
-![Capture](https://github.com/user-attachments/assets/f86f0481-d98e-4c0e-a972-32f408f90e2c)
+Or simply download the canvas.py and demo.py files, and develop from there.
 
 
