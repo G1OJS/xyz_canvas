@@ -19,8 +19,6 @@ There are two ways to use this library:
 1) Modify it for your own needs, by editing the code in canvas.py
 2) Incorporate it into your own code by processing the points that it returns - by building on the code in demo.py. For example, your code could take the returned points to define a polygon which you could then display in 3D.
 
-I intend to provide examples of this in later versions.
-
 ## Installation
 Install with pip:
 ```
@@ -28,4 +26,9 @@ pip install xyz_canvas
 ```
 Or simply download the canvas.py and demo.py files, and develop from there.
 
+## Future plans / ideas
+ - demo how to build on top of this to create objects? (might highlight extra functions needed here)
+ - add snap to grid (make it settable as dx,dy,dz
+ - polar / spherical co-ordinates?
+ - transforms? 
 
