@@ -2,7 +2,7 @@
 ## Interactive canvas for editing 3D geometry, using only matplotlib.pyplot
 
 ### What is it?
-**XYZ_canvas provides the starting point to create Python code that allows defining and editing objects in 3D space, using only Matplotlib and just over 200 lines of library in canvas.py. **
+**XYZ_canvas provides the starting point to create Python code that allows defining and editing objects in 3D space, using only Matplotlib and just over 200 lines of library in canvas.py.**
 
 This library provides you with the 3D co-ordinates of points clicked on and moved to / over, so that you can create your own code to process the points created. You can reach down into the definitions made in canvas.py to manipulate what's created during use, e.g. delete all the points as shown in the customisation example.
 
