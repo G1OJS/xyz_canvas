@@ -5,6 +5,9 @@ from xyz_canvas.canvas import xyz_canvas
 # callback examples
 
 def on_click(canvas, xyz, pt_index):
+    # add more of your own code here - xyz is the 3D point clicked, and
+    # pt_index is None if there's no defined point associated, otherwise
+    # it's the index (i.e. 'point number' of the points created
     if (pt_index is not None):
         print(f"Clicked on point {pt_index} at {canvas.points_xyz[pt_index]}")
         if(len(canvas.points_xyz) >3):
@@ -14,6 +17,9 @@ def on_click(canvas, xyz, pt_index):
         print(f"Clicked at {xyz}")
         
 def on_move(canvas, xyz, selectable_pt_index, selected_pt_index):
+    # add more of your own code here - xyz is the 3D point of the mouse pointer,
+    # selectable_pt_index is the point index of points 'hovered over', or None
+    # selected_pt_index is the point index of any point being 'carried', or None
     if (selectable_pt_index is not None):
         print(f"Moved to {xyz} near point {selectable_pt_index}" )
     if (selected_pt_index is not None):

@@ -35,11 +35,9 @@ def _interleave(ends):
 
 class xyz_canvas:
 
-    def __init__(self,
-                 xlim =[0,1], ylim =[0,1], zlim=[0,1],
-                 xlabel="x", ylabel="y", zlabel="z",
-                 on_click_cb = None,
-                 on_move_cb = None
+    def __init__(self, *args, xlim =[0,10], ylim =[-20,30], zlim=[-3,5],
+                               xlabel="x", ylabel="y", zlabel="z",
+                               on_click_cb = None, on_move_cb = None, **kwargs
                  ):
         self.plt = plt
         self.fig = plt.figure()
@@ -93,13 +91,6 @@ class xyz_canvas:
             x,y,z = xyz[0],xyz[1],xyz[2]
             self.ax.text(x,y,z,f"  ({x:.3f}, {y:.3f}, {z:.3f})", size = 'small')
 
-    def on_button_press(self,action):
-        if action == 'clear':
-            self.init_canvas()
-        elif action == 'save':
-            self.on_complete_cb(self.points_xyz)
-        elif action == 'exit':
-            plt.close()
 
     def on_pointer_click(self, xyz, ep_idx):
         # If we click whilst moving a point, drop it.
@@ -236,3 +227,18 @@ class mouse_3D:
         y_in = self.ax.get_ylim()[0] <= p[1] <= self.ax.get_ylim()[1]
         z_in = self.ax.get_zlim()[0] <= p[2] <= self.ax.get_zlim()[1]
         return (x_in and y_in and z_in)
+
+
+
+# Keep old name as an alias with deprecation warning
+class define_points(xyz_canvas):
+    def __init__(self, *args, on_complete_cb=None, **kwargs):
+        warnings.warn(
+            "define_points is deprecated and will be removed in a future version. "
+            "Please use NewClassName instead.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        if on_complete_cb is not None:
+            warnings.warn("on_complete_cb is no longer used and will be ignored.", DeprecationWarning)
+        super().__init__(*args, **kwargs)
