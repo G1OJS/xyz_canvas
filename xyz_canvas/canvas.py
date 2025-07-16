@@ -41,6 +41,7 @@ class xyz_canvas:
                  on_click_cb = None,
                  on_move_cb = None
                  ):
+        self.plt = plt
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.xlim=xlim
@@ -57,7 +58,7 @@ class xyz_canvas:
         self.mouse_end_pane_idx_on_select = None
         self.init_canvas()
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
-        plt.show()
+    #    plt.show()
 
     def init_axes(self):
         self.ax.set_xlim(self.xlim)
@@ -112,12 +113,14 @@ class xyz_canvas:
             # so if we are over a point and clicked on it, select it
             if(self.selectable_point_index is not None):  
                 self.selected_point_index = self.selectable_point_index
-                self.on_click_cb(self, xyz, self.selected_point_index)
+                if(self.on_click_cb):
+                    self.on_click_cb(self, xyz, self.selected_point_index)
             else:
             # if there's nothing to select,  append the point and immediately select it
                 self.points_xyz.append(xyz)         
                 self.selected_point_index = len(self.points_xyz) - 1
-                self.on_click_cb(self, xyz, self.selected_point_index)
+                if(self.on_click_cb):
+                    self.on_click_cb(self, xyz, self.selected_point_index)
                 self.redraw(showframe_xyz = xyz)
             # whether new or existing, record the ep_idx of the selected point,
             # at the start of its move, for on_pointer_move to use
@@ -131,7 +134,8 @@ class xyz_canvas:
             xyz[fix_idx] = self.points_xyz[self.selected_point_index][fix_idx]           
             self.points_xyz[self.selected_point_index] = xyz
             self.redraw(showframe_xyz = xyz)
-            self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
+            if(self.on_move_cb):
+                self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
         else:
         # If we don't have a point selected, see if we could select one
             self.check_for_selectable_point(xy)
@@ -139,11 +143,13 @@ class xyz_canvas:
             if (self.selectable_point_index is not None):  
                 self.fig.canvas.set_cursor(Cursors.HAND)
                 self.redraw(showframe_xyz = xyz)
-                self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
+                if(self.on_move_cb):
+                    self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
             else:
                 self.redraw(showframe_xyz = None)      
                 self.fig.canvas.set_cursor(Cursors.POINTER)
-                self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
+                if(self.on_move_cb):
+                    self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
 
 
     def check_for_selectable_point(self,xy):
