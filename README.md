@@ -4,20 +4,28 @@
 ### What is it?
 XYZ_canvas provides the starting point to create Python code that allows defining and editing points in 3D space, using only Matplotlib and just over 200 lines of library in canvas.py. 
 
-![Capture](https://github.com/user-attachments/assets/5b499950-00f6-4d0b-983c-4a2492652ed2)
+![Capture](https://github.com/user-attachments/assets/f53e6b01-ce03-4141-b15f-3077ab1065ad)
 
 ### How can I use it?
-The demo.py program shows how simple it is to instantiate the canvas:
+The "demo_V1.1.0_minimal.py" program shows how simple it is to instantiate the canvas:
 ```
-demo_3D_builder = define_points(on_complete_cb = on_complete,
-                               xlim =[0,10], ylim =[-20,30], zlim=[-3,5],
-                               xlabel="x", ylabel="y", zlabel="z")
-```
-The 'on_complete_cb' function specified is called when the save button is pressed, and the list of 3D points created is passed to it.
+from xyz_canvas.canvas import xyz_canvas
 
-There are two ways to use this library:
-1) Modify it for your own needs, by editing the code in canvas.py
-2) Incorporate it into your own code by processing the points that it returns - by building on the code in demo.py. For example, your code could take the returned points to define a polygon which you could then display in 3D.
+#instantiating the canvas:
+demo = xyz_canvas(  xlim =[0,1], ylim =[0,1], zlim=[0,1],
+                                xlabel="x", ylabel="y", zlabel="z"            
+                               )
+
+# showing the plot
+demo.plt.show()
+
+# note that this is so minimal that all it does is display;
+# the resulting points are not used here.
+
+print("Demo finished ...")
+
+```
+If you want to do things with the points created, look in "demo_V1.1.0_with_customisation.py". Here you'll see examples of customising the colour scheme and reacting to mouse clicks and mouse moves.
 
 ## Installation
 Install with pip:
