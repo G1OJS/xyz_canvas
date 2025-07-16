@@ -26,7 +26,6 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d as mpl
 from matplotlib.backend_bases import MouseButton
 from matplotlib.backend_tools import Cursors
-from matplotlib.widgets import Button
 
 
 def _interleave(ends):
@@ -34,11 +33,14 @@ def _interleave(ends):
     b = ends[1]
     return [a[0],b[0]], [a[1],b[1]], [a[2],b[2]]
 
-class define_points:
+class xyz_canvas:
 
-    def __init__(self, on_complete_cb,
+    def __init__(self,
                  xlim =[0,1], ylim =[0,1], zlim=[0,1],
-                 xlabel="x", ylabel="y", zlabel="z"):
+                 xlabel="x", ylabel="y", zlabel="z",
+                 on_click_cb = None,
+                 on_move_cb = None
+                 ):
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')
         self.xlim=xlim
@@ -47,12 +49,13 @@ class define_points:
         self.xlabel=xlabel
         self.ylabel=ylabel
         self.zlabel=zlabel
+        self.on_click_cb = on_click_cb
+        self.on_move_cb = on_move_cb
         self.points_xyz = []
         self.selectable_point_index = None
         self.selected_point_index = None
         self.mouse_end_pane_idx_on_select = None
         self.init_canvas()
-        self.on_complete_cb = on_complete_cb
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
         plt.show()
 
@@ -68,8 +71,8 @@ class define_points:
         self.points_xyz = []
         self.ax.cla()
         self.init_axes()
+        self.selected_point_index = None
         self.ax.figure.canvas.draw_idle()
-        self.buttons = buttons(plt, self.fig, self.on_button_press)
 
     def redraw(self, showframe_xyz=None):
         self.ax.cla()
@@ -100,6 +103,7 @@ class define_points:
     def on_pointer_click(self, xyz, ep_idx):
         # If we click whilst moving a point, drop it.
         # Note that its xyz will have been updated during the move to this point
+        # This is a 'click away' event so we don't call on_click_cb
         if(self.selected_point_index is not None):        
             self.selected_point_index = None   
             self.redraw(showframe_xyz = None)
@@ -107,11 +111,13 @@ class define_points:
         # we were just roaming and clicked
             # so if we are over a point and clicked on it, select it
             if(self.selectable_point_index is not None):  
-                self.selected_point_index = self.selectable_point_index    
+                self.selected_point_index = self.selectable_point_index
+                self.on_click_cb(self, xyz, self.selected_point_index)
             else:
             # if there's nothing to select,  append the point and immediately select it
                 self.points_xyz.append(xyz)         
-                self.selected_point_index = len(self.points_xyz) - 1        
+                self.selected_point_index = len(self.points_xyz) - 1
+                self.on_click_cb(self, xyz, self.selected_point_index)
                 self.redraw(showframe_xyz = xyz)
             # whether new or existing, record the ep_idx of the selected point,
             # at the start of its move, for on_pointer_move to use
@@ -124,7 +130,8 @@ class define_points:
             fix_idx = (self.mouse_end_pane_idx_on_select + 1) % 3
             xyz[fix_idx] = self.points_xyz[self.selected_point_index][fix_idx]           
             self.points_xyz[self.selected_point_index] = xyz
-            self.redraw(showframe_xyz = xyz) 
+            self.redraw(showframe_xyz = xyz)
+            self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
         else:
         # If we don't have a point selected, see if we could select one
             self.check_for_selectable_point(xy)
@@ -132,9 +139,12 @@ class define_points:
             if (self.selectable_point_index is not None):  
                 self.fig.canvas.set_cursor(Cursors.HAND)
                 self.redraw(showframe_xyz = xyz)
+                self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
             else:
                 self.redraw(showframe_xyz = None)      
-                self.fig.canvas.set_cursor(Cursors.POINTER)  
+                self.fig.canvas.set_cursor(Cursors.POINTER)
+                self.on_move_cb(self, xyz, self.selectable_point_index, self.selected_point_index)
+
 
     def check_for_selectable_point(self,xy):
         from mpl_toolkits.mplot3d import proj3d
@@ -150,39 +160,13 @@ class define_points:
         return
 
 
-class buttons:
-    def __init__(self, plt, fig, buttons_cb):
-        self.plt = plt
-        self.fig = fig
-        self.buttons_cb = buttons_cb
-        self.buttons = []
-
-        # Layout settings
-        button_height = 0.05
-        button_width = 0.2
-        spacing = 0.01
-        start_y = 0.9
-
-        buttons = [
-            ('Clear canvas', 'clear'),
-            ('Save', 'save'),
-            ('Exit', 'exit'),
-            ]
-
-        for i, (label, action) in enumerate(buttons):
-            ax = fig.add_axes([0.01, start_y - i*(button_height + spacing), button_width, button_height])
-            btn = Button(ax, label)
-            btn.on_clicked(lambda event, act=action: self.buttons_cb(act))
-            self.buttons.append(btn)
-
-
 class mouse_3D:
 
-    def __init__(self, plt, ax, on_click_cb, on_move_cb):
+    def __init__(self, plt, ax, on_click_internal, on_move_internal):
         self.plt = plt
         self.ax = ax
-        self.on_click_cb = on_click_cb
-        self.on_move_cb = on_move_cb
+        self.on_click_internal = on_click_internal
+        self.on_move_internal = on_move_internal
         self.in_axes_range_prev = False
         self.click_binding_id = None
         self.plt.connect('motion_notify_event', self.on_move)
@@ -199,7 +183,7 @@ class mouse_3D:
             pt, ep_idx = info[0], info[1]
             xy = [float(event.xdata), float(event.ydata)]
             in_axes_range_now = self._in_axes_range(pt)
-            self.on_move_cb(pt,  xy, ep_idx)
+            self.on_move_internal(pt,  xy, ep_idx)
             if(not (in_axes_range_now == self.in_axes_range_prev)):
                 if in_axes_range_now:
                     self.ax.mouse_init(rotate_btn=0)
@@ -218,7 +202,7 @@ class mouse_3D:
                 return
             pt, ep_idx = info
             if(self._in_axes_range(pt)):
-                self.on_click_cb(pt, ep_idx)
+                self.on_click_internal(pt, ep_idx)
             
     def _get_pane_coords(self, s):
         # gets x,y,z of mouse position from s=ax.format_coord(event.xdata, event.ydata)
