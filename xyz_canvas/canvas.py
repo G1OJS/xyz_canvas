@@ -231,13 +231,14 @@ class mouse_3D:
 
 # For backwards compatibility with V1.0.0
 class define_points(xyz_canvas):
+    import warnings
     def __init__(self, *args, on_complete_cb=None, **kwargs):
-        warnings.warn(
+        self.warnings.warn(
             "define_points is deprecated and will be removed in a future version. "
             "Please use NewClassName instead.",
             DeprecationWarning,
             stacklevel=2
         )
         if on_complete_cb is not None:
-            warnings.warn("on_complete_cb is no longer used and will be ignored.", DeprecationWarning)
+            self.warnings.warn("on_complete_cb is no longer used and will be ignored.", DeprecationWarning)
         super().__init__(*args, **kwargs)
