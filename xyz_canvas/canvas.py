@@ -56,7 +56,6 @@ class xyz_canvas:
         self.mouse_end_pane_idx_on_select = None
         self.init_canvas()
         self.pointer = mouse_3D(plt, self.ax, self.on_pointer_click, self.on_pointer_move)
-    #    plt.show()
 
     def init_axes(self):
         self.ax.set_xlim(self.xlim)
@@ -230,7 +229,7 @@ class mouse_3D:
 
 
 
-# Keep old name as an alias with deprecation warning
+# For backwards compatibility with V1.0.0
 class define_points(xyz_canvas):
     def __init__(self, *args, on_complete_cb=None, **kwargs):
         warnings.warn(
