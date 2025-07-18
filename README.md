@@ -1,4 +1,4 @@
-# xyz_canvas
+# xyz_canvas [![PyPI Downloads](https://static.pepy.tech/badge/xyz-canvas)](https://pepy.tech/projects/xyz-canvas)
 ## Interactive canvas for editing 3D geometry, using only matplotlib.pyplot
 
 ### What is it?
